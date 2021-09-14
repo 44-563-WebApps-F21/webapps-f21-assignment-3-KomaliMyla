@@ -99,3 +99,81 @@ It has no raods but only canals and the beautiful buildings aroung the water.</p
 </table>
 </body>
 </html>
+
+<hr>
+<p>Here is brief description of the alrgorith</p>
+<blockquote> cite="https://www.sciencedirect.com/science/article/pii/0304397579900550/pdf?md5=34d64bc5ee9c7cce6c409504d40c7419&pid=1-s2.0-0304397579900550-main.pdf&_valck=1">
+    Abstract. Given a set of n half-spaces in three-dimensional space, we deveiiop an algorithm for
+    finding their common intersection in time O(n log n). The intersectton, if nonempty, is presented
+    as a convex polyhedron. The algorithm is summarized as follows: (i) the half-spaces are placed in
+    two sets depending upon whether they contain or do not contain the origin; (ii) the: hatf-sguccs in
+    each of these sets are dualized to points, and the convex hulls of the dualized sets are obtained in
+    time O(n log n); (iii) since the half-spabe intersection is nonempty if and only if these two c:onvex
+    hulls are disjoint, a separating plane is found, also in time Oin log n); (iv) after applying a linear
+    spatial transformation which maps the separating plane to infinity, the convex hull of the union of
+    the two transformed convex hulls is the tuansformed intersection of the half-spaces.
+</blockquote>
+<pre>
+    // Actual algorithm
+vector<Point> hp_intersect(vector<Halfplane>& H) { 
+
+    Point box[4] = {  // Bounding box in CCW order
+        Point(inf, inf), 
+        Point(-inf, inf), 
+        Point(-inf, -inf), 
+        Point(inf, -inf) 
+    };
+
+    for(int i = 0; i<4; i++) { // Add bounding box half-planes.
+        Halfplane aux(box[i], box[(i+1) % 4]);
+        H.push_back(aux);
+    }
+
+    // Sort and remove duplicates
+    sort(H.begin(), H.end());
+    H.erase(unique(H.begin(), H.end()), H.end());
+
+    deque<Halfplane> dq;
+    int len = 0;
+    for(int i = 0; i < int(H.size()); i++) {
+
+        // Remove from the back of the deque while last half-plane is redundant
+        while (len > 1 && H[i].out(inter(dq[len-1], dq[len-2]))) {
+            dq.pop_back();
+            --len;
+        }
+
+        // Remove from the front of the deque while first half-plane is redundant
+        while (len > 1 && H[i].out(inter(dq[0], dq[1]))) {
+            dq.pop_front();
+            --len;
+        }
+
+        // Add new half-plane
+        dq.push_back(H[i]);
+        ++len;
+    }
+
+    // Final cleanup: Check half-planes at the front against the back and vice-versa
+    while (len > 2 && dq[0].out(inter(dq[len-1], dq[len-2]))) {
+        dq.pop_back();
+        --len;
+    }
+
+    while (len > 2 && dq[len-1].out(inter(dq[0], dq[1]))) {
+        dq.pop_front();
+        --len;
+    }
+
+    // Report empty intersection if necessary
+    if (len < 3) return vector<Point>();
+
+    // Reconstruct the convex polygon from the remaining half-planes.
+    vector<Point> ret(len);
+    for(int i = 0; i+1 < len; i++) {
+        ret[i] = inter(dq[i], dq[i+1]);
+    }
+    ret.back() = inter(dq[len-1], dq[0]);
+    return ret;
+}
+</pre>
